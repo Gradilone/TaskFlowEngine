@@ -1,0 +1,64 @@
+﻿services:
+  database:
+    image: mongo:latest
+    container_name: task-manager-db
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=sa
+      - MONGO_INITDB_ROOT_PASSWORD=TaskManager_Docker_2026
+    ports:
+      - "27017:27017"
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - mongo_data:/data/db
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: task-manager-mq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "check_running"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: .
+      dockerfile: TaskManager/Dockerfile
+    container_name: task-manager-api
+    ports:
+      - "5000:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - MongoDbSettings__ConnectionString=mongodb://sa:TaskManager_Docker_2026@task-manager-db:27017
+      - MongoDbSettings__DatabaseName=TaskManagerDB
+      - RabbitMqSettings__HostName=task-manager-mq
+    depends_on:
+      database:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  worker:
+    build:
+      context: .
+      dockerfile: TaskManager.Worker/Dockerfile
+    container_name: task-manager-worker
+    environment:
+      - MongoDbSettings__ConnectionString=mongodb://sa:TaskManager_Docker_2026@task-manager-db:27017
+      - MongoDbSettings__DatabaseName=TaskManagerDB
+      - RabbitMqSettings__HostName=task-manager-mq
+    depends_on:
+      database:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+volumes:
+  mongo_data:
