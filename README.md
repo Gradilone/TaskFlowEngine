@@ -21,3 +21,7 @@ Certifique-se de ter o **Docker** instalado.
 
 1. Na raiz do projeto, execute: `docker-compose up --build`
 2. Acesse o **Swagger** em: `http://localhost:5000/swagger`
+3. Acesse o **RabbitMQ** em:
+`​URL: http://localhost:15672`
+`​Usuário padrão: guest`
+`​Senha padrão: guest`
